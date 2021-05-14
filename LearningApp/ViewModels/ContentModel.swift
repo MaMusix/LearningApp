@@ -10,6 +10,11 @@ import Foundation
 class ContentModel: ObservableObject {
     
     @Published var modules = [Module]()
+//    Current module
+    @Published var currentModule: Module?
+    var currentModuleIndex = 0
+    
+    
     var styleData: Data?
     
     init() {
@@ -17,6 +22,8 @@ class ContentModel: ObservableObject {
         getLocalData()
         
     }
+    
+//    Mark Data methods
     
     func getLocalData() {
         
@@ -65,6 +72,19 @@ class ContentModel: ObservableObject {
         
 
         
+    }
+    
+//    Mark Module navigation methods
+    
+    func beginModule(_ moduleId: Int) {
+        for index in 0..<modules.count {
+            if modules[index].id == moduleId {
+                currentModuleIndex = index
+                break
+            }
+        }
+        
+        currentModule = modules[currentModuleIndex]
     }
     
 }
