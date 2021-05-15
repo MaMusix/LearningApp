@@ -1,15 +1,15 @@
 //
-//  TestView.swift
+//  ContentDetailView.swift
 //  LearningApp
 //
-//  Created by Christopher Ching on 2021-03-24.
+//  Created by Michael Ketelaar on 14.05.21.
 //
 
 import SwiftUI
 
 struct TestView: View {
     
-    @EnvironmentObject var model:ContentModel
+    @EnvironmentObject var model: ContentModel
     @State var selectedAnswerIndex: Int?
     @State var numCorrect = 0
     @State var submitted = false
@@ -49,50 +49,77 @@ struct TestView: View {
                                             
                                         }
                                         if index == selectedAnswerIndex &&
-                                                index != model.currentQuestion?.correctIndex {
+                                            index != model.currentQuestion?.correctIndex {
                                             RectangleCard(color: Color.red)
                                                 .frame(height: 48)
                                         } else {
                                             RectangleCard(color: Color.white)
                                                 .frame(height: 48)
+                                        }
+                                        Text(model.currentQuestion!.answers[index])
                                     }
-                                    Text(model.currentQuestion!.answers[index])
                                 }
+                                
                             }
-                            
+                            .disabled(submitted)
                         }
-                        .disabled(submitted)
                     }
+                    .frame(height: 48)
+                    .accentColor(.black)
+                    .padding()
+                    
+                    // Submit Button
                 }
-                .frame(height: 48)
-                .accentColor(.black)
-                .padding()
-                
-                // Submit Button
+                .navigationBarTitle("\(model.currentModule?.category ?? "") Test")
+                Button {
+                    
+                    if submitted == true {
+                        model.nextQuestion()
+                        submitted = false
+                        selectedAnswerIndex = nil
+                        
+                    } else {
+                        
+                        submitted = true
+                        
+                        if selectedAnswerIndex == model.currentQuestion!.correctIndex {
+                            numCorrect += 1
+                        }
+                    }
+                    
+                } label: {
+                    ZStack {
+                        RectangleCard()
+                        Text(buttonText)
+                            .foregroundColor(Color.white)
+                            .bold()
+                    }
+                    .padding()
+                    
+                }
+                .disabled(selectedAnswerIndex == nil)
             }
-            .navigationBarTitle("\(model.currentModule?.category ?? "") Test")
-            Button {
-                submitted = true
-                
-                if selectedAnswerIndex == model.currentQuestion!.correctIndex {
-                    numCorrect += 1
-                }
-            } label: {
-                ZStack {
-                    RectangleCard()
-                    Text("Submit")
-                        .foregroundColor(Color.white)
-                        .bold()
-                }
-                .padding()
-                
-            }
-            .disabled(selectedAnswerIndex == nil)
+            
         }
-        
+    }
+    
+    var buttonText: String {
+        //        Check if answer has been submitted
+        if submitted == true {
+            if model.currentQuestionIndex + 1 == model.currentModule!.test.questions.count {
+                return "Finished"
+                
+            } else {
+                return "Next question"
+            }
+            
+        }
+        else {
+            return "Submit answer"
+        }
     }
 }
-}
+
 
 struct TestView_Previews: PreviewProvider {
     static var previews: some View {
