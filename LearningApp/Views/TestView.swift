@@ -101,6 +101,9 @@ struct TestView: View {
             }
             
         }
+        else {
+            TestResultView(numCorrect: numCorrect)
+        }
     }
     
     var buttonText: String {
