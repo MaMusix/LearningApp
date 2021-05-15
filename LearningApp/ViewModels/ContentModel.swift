@@ -5,29 +5,33 @@
 //  Created by Michael Ketelaar on 14.05.21.
 //
 
+
 import Foundation
 
 class ContentModel: ObservableObject {
     
+    // List of modules
     @Published var modules = [Module]()
-    //    Current module
+    
+    // Current module
     @Published var currentModule: Module?
     var currentModuleIndex = 0
     
-    //    CUrrent lesson
+    // Current lesson
     @Published var currentLesson: Lesson?
     var currentLessonIndex = 0
     
+    // Current question
     @Published var currentQuestion: Question?
     var currentQuestionIndex = 0
     
-    
+    // Current lesson explanation
     @Published var codeText = NSAttributedString()
     var styleData: Data?
     
-    @Published var currentContentSelected: Int?
-    
-    @Published var currentTestSelected: Int?
+    // Current selected content and test
+    @Published var currentContentSelected:Int?
+    @Published var currentTestSelected:Int?
     
     
     init() {
@@ -36,132 +40,158 @@ class ContentModel: ObservableObject {
         
     }
     
-    //    Mark Data methods
+    // MARK: - Data methods
     
     func getLocalData() {
         
-        //        data.json importieren
-        
+        // Get a url to the json file
         let jsonUrl = Bundle.main.url(forResource: "data", withExtension: "json")
         
         do {
-            
+            // Read the file into a data object
             let jsonData = try Data(contentsOf: jsonUrl!)
             
-            do {
-                
-                let modules = try JSONDecoder().decode([Module].self, from: jsonData)
-                
-                self.modules = modules
-                
-            } catch {
-                
-                print("Error: Fehler beim Dekodieren der Daten")
-                
-            }
+            // Try to decode the json into an array of modules
+            let jsonDecoder = JSONDecoder()
+            let modules = try jsonDecoder.decode([Module].self, from: jsonData)
             
-        } catch {
-            print("Error: Fehler beim Einlesen der Daten")
+            // Assign parsed modules to modules property
+            self.modules = modules
+        }
+        catch {
+            // TODO log error
+            print("Couldn't parse local data")
         }
         
-        
-        
-        //        style.html importieren
-        
+        // Parse the style data
         let styleUrl = Bundle.main.url(forResource: "style", withExtension: "html")
         
         do {
             
+            // Read the file into a data object
             let styleData = try Data(contentsOf: styleUrl!)
             
             self.styleData = styleData
-            
-        } catch {
-            
-            print("Error: Fehler beim Einlesen des Styles")
-            
         }
-        
-        
-        
+        catch {
+            // Log error
+            print("Couldn't parse style data")
+        }
         
     }
     
-    //    Mark Module navigation methods
+    // MARK: - Module navigation methods
     
-    func beginModule(_ moduleId: Int) {
+    func beginModule(_ moduleid:Int) {
+        
+        // Find the index for this module id
         for index in 0..<modules.count {
-            if modules[index].id == moduleId {
+            
+            if modules[index].id == moduleid {
+            
+                // Found the matching module
                 currentModuleIndex = index
                 break
             }
         }
         
+        // Set the current module
         currentModule = modules[currentModuleIndex]
     }
     
-    func beginLesson(_ lessonIndex: Int) {
-        //        Check that the lesson index is within range of module lessons
+    func beginLesson(_ lessonIndex:Int) {
+        
+        // Check that the lesson index is within range of module lessons
         if lessonIndex < currentModule!.content.lessons.count {
             currentLessonIndex = lessonIndex
-        } else {
+        }
+        else {
             currentLessonIndex = 0
         }
-        //        Set the current lesson
+        
+        // Set the current lesson
         currentLesson = currentModule!.content.lessons[currentLessonIndex]
         codeText = addStyling(currentLesson!.explanation)
-    
     }
     
     func nextLesson() {
         
+        // Advance the lesson index
         currentLessonIndex += 1
         
+        // Check that it is within range
         if currentLessonIndex < currentModule!.content.lessons.count {
+            
+            // Set the current lesson property
             currentLesson = currentModule!.content.lessons[currentLessonIndex]
             codeText = addStyling(currentLesson!.explanation)
-        } else {
-            
+        }
+        else {
+            // Reset the lesson state
             currentLessonIndex = 0
             currentLesson = nil
         }
     }
     
     func hasNextLesson() -> Bool {
-        return currentLessonIndex + 1 < currentModule!.content.lessons.count 
+        
+        return (currentLessonIndex + 1 < currentModule!.content.lessons.count)
     }
     
     func beginTest(_ moduleId:Int) {
+        
+        // Set the current module
         beginModule(moduleId)
+        
+        // Set the current question index
         currentQuestionIndex = 0
-        if currentModule?.test.questions.count ?? 0 > 0 {
+        
+        // If there are questions, set the current question to the first one
+        if currentModule?.test.questions.count ?? 0  > 0 {
             currentQuestion = currentModule!.test.questions[currentQuestionIndex]
-//            Set questioncontent
+            
+            // Set the question content
             codeText = addStyling(currentQuestion!.content)
         }
-    
     }
     
-    //    Code Styling
+    func nextQuestion() {
+        
+        currentQuestionIndex += 1
+        
+        if currentQuestionIndex < currentModule!.test.questions.count {
+            
+            currentQuestion = currentModule!.test.questions[currentQuestionIndex]
+            codeText = addStyling(currentQuestion!.content)
+            
+        } else {
+            currentQuestionIndex = 0
+            currentQuestion = nil
+        }
+        
+    }
+    
+    // MARK: - Code Styling
     
     private func addStyling(_ htmlString: String) -> NSAttributedString {
         
         var resultString = NSAttributedString()
         var data = Data()
         
+        // Add the styling data
         if styleData != nil {
             data.append(styleData!)
         }
         
+        // Add the html data
         data.append(Data(htmlString.utf8))
         
+        // Convert to attributed string
         if let attributedString = try? NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.html], documentAttributes: nil) {
             
             resultString = attributedString
-            
-            
         }
-        return resultString
         
+        return resultString
     }
 }
